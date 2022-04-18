@@ -17,19 +17,29 @@ app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
 
-app.get("/urls.json", (req, res) => {
-  res.json(urlDatabase);
-})
+//THIS IS THE ONE I DON'T KNOW IF I NEED
+// app.get("/urls.json", (req, res) => {
+//   res.json(urlDatabase);
+// })
+
+//THIS IS THE NEW ONE THAT I DON'T KNOW IF IT REPLACES ABOVE
+app.get("/urls", (req, res) => {
+  const templateVars = { urls: urlDatabase };
+  res.render("urls_index", templateVars);
+});
 
 app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n")
 });
 
-app.get("/set", (req, res) => {
-  const a = 1;
-  res.send(`a = ${a}`);
-});
 
-app.get("/fetch", (req, res) => {
-  res.send(`a = ${a}`);
-});
+// THESE WERE HERE AS A DEMONSTRATION THAT VARIABLES AREN'T PASSED ALONG
+// app.get("/set", (req, res) => {
+//   const a = 1;
+//   res.send(`a = ${a}`);
+// });
+
+
+// app.get("/fetch", (req, res) => {
+//   res.send(`a = ${a}`);
+// });
