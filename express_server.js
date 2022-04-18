@@ -53,7 +53,6 @@ app.post("/urls", (req, res) => {
   Object.assign(urlDatabase, { [shortURL] : longURL });
   const newVars = { shortURL, longURL };
   res.render("urls_show", newVars)
-  res.redirect(`/urls/:${shortURL}`)
 
 })
 
