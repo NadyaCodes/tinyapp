@@ -35,9 +35,6 @@ app.listen(PORT, () => {
 //   res.json(urlDatabase);
 // })
 
-//THIS IS THE NEW ONE THAT I DON'T KNOW IF IT REPLACES ABOVE
-
-
 
 app.get("/urls", (req, res) => {
   const templateVars = { urls: urlDatabase };
@@ -45,9 +42,6 @@ app.get("/urls", (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
-  // console.log(req.body);
-  // req.body.shortURL = generateRandomString();
-  // console.log(req.body)
   let shortURL = generateRandomString()
   let longURL = req.body.longURL;
   Object.assign(urlDatabase, { [shortURL] : longURL });
@@ -60,11 +54,18 @@ app.get("/urls/new", (req, res) => {
   res.render("urls_new");
 });
 
+app.get("/u/:shortURL", (req, res) => {
+  const shortURL = req.params.shortURL;
+  const longURL = urlDatabase[shortURL];
+  res.redirect(longURL);
+})
+
 
 app.get("/urls/:shortURL", (req, res) => {
   const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
   res.render("urls_show", templateVars);
 });
+
 
 
 app.get("/hello", (req, res) => {
