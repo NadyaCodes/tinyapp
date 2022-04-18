@@ -45,9 +45,12 @@ app.get("/urls", (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
-  console.log(req.body);
-  req.body.shortURL = generateRandomString();
-  console.log(req.body)
+  // console.log(req.body);
+  // req.body.shortURL = generateRandomString();
+  // console.log(req.body)
+  let shortURL = generateRandomString()
+  let longURL = req.body.longURL;
+  Object.assign(urlDatabase, { [shortURL] : longURL }),
   res.send("Ok");
 })
 
@@ -65,6 +68,7 @@ app.get("/urls/:shortURL", (req, res) => {
 app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n")
 });
+
 
 
 // THESE WERE HERE AS A DEMONSTRATION THAT VARIABLES AREN'T PASSED ALONG
