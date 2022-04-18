@@ -50,8 +50,11 @@ app.post("/urls", (req, res) => {
   // console.log(req.body)
   let shortURL = generateRandomString()
   let longURL = req.body.longURL;
-  Object.assign(urlDatabase, { [shortURL] : longURL }),
-  res.send("Ok");
+  Object.assign(urlDatabase, { [shortURL] : longURL });
+  const newVars = { shortURL, longURL };
+  res.render("urls_show", newVars)
+  res.redirect(`/urls/:${shortURL}`)
+
 })
 
 app.get("/urls/new", (req, res) => {
