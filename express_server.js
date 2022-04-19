@@ -34,6 +34,13 @@ app.listen(PORT, () => {
 //   res.json(urlDatabase);
 // })
 
+//FROM ZOOM CHAT
+// app.get("/u/:shortURL", (req, res) => {
+//   const shortURL = req.params.shortURL;
+//   const longURL = urlDatabase[shortURL];
+//   res.redirect(longURL);
+// });
+
 
 app.get("/urls", (req, res) => {
   const templateVars = { urls: urlDatabase };
@@ -51,16 +58,19 @@ app.post("/urls", (req, res) => {
 })
 
 
-app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
-});
-
-//delete an etnry
+//delete an entry
 app.post("/u/:shortURL/delete", (req, res) => {
+  console.log("urlDatabase[req.params.shortURL]:", urlDatabase[req.params.shortURL])
   delete urlDatabase[req.params.shortURL];
   const newTemplateVars = { urls: urlDatabase };
   res.render("urls_index", newTemplateVars)
 })
+
+
+app.get("/urls/new", (req, res) => {
+  res.render("urls_new");
+});
+
 
 
 //redirects to external site
