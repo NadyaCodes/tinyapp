@@ -21,7 +21,6 @@ function generateRandomString() {
   return randomString;
 }
 
-
 app.get("/", (req, res) => {
   res.send("Hello!");
 });
@@ -41,6 +40,7 @@ app.get("/urls", (req, res) => {
   res.render("urls_index", templateVars);
 });
 
+//creates a new entry
 app.post("/urls", (req, res) => {
   let shortURL = generateRandomString()
   let longURL = req.body.longURL;
@@ -50,22 +50,27 @@ app.post("/urls", (req, res) => {
 
 })
 
+
 app.get("/urls/new", (req, res) => {
   res.render("urls_new");
 });
 
+//delete an etnry
 app.post("/u/:shortURL/delete", (req, res) => {
   delete urlDatabase[req.params.shortURL];
   const newTemplateVars = { urls: urlDatabase };
   res.render("urls_index", newTemplateVars)
 })
 
+
+//redirects to external site
 app.get("/u/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
   const longURL = urlDatabase[shortURL];
   res.redirect(longURL);
 })
 
+//changes longURL entry
 app.post("/urls/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL
   delete urlDatabase[shortURL];
@@ -82,7 +87,7 @@ app.get("/urls/:shortURL", (req, res) => {
 });
 
 
-
+//This page probably not needed
 app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n")
 });
