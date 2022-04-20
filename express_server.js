@@ -179,29 +179,6 @@ app.get("/register", (req, res) => {
 })
 
 
-// const users = {
-//   "userRandomID": {
-//     id: "userRandomID", 
-//     email: "user@example.com", 
-//     password: "purple-monkey-dinosaur"
-//   },
-//  "user2RandomID": {
-//     id: "user2RandomID", 
-//     email: "user2@example.com", 
-//     password: "dishwasher-funk"
-//   }
-
-// }
-
-
-// function findMatchingEmail(usersObject, email) {
-//   for (let id in usersObject) {
-//     if (usersObject[id].email === email) {
-//       return true;
-//     }
-//   }
-// }
-
 app.post("/register", (req, res) => {
   if (req.body.email === '') {
     res.status('400').send('ERROR - 400 - Please enter a valid email address')
@@ -227,6 +204,15 @@ app.post("/register", (req, res) => {
   users[newUserId] = newUserObject;
   res.cookie("user_id", newUserObject)
   res.redirect("/urls");
+})
+
+
+app.get("/login", (req, res) => {
+  const templateVars = { 
+    user: req.cookies["user_id"],
+    urls: urlDatabase 
+  };
+  res.render("login_form", templateVars);
 })
 
 //This page probably not needed
