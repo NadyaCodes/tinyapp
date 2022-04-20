@@ -29,7 +29,7 @@ const users = {
 }
 
 function generateRandomString() {
-  let randomString = "";
+  let randomString = ""
   const stringOptions = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
   for (let i = 0; i < 6; i++) {
     randomString += stringOptions[Math.floor(Math.random() * stringOptions.length)]
@@ -78,6 +78,10 @@ app.get("/urls", (req, res) => {
 
 //creates a new entry
 app.post("/urls", (req, res) => {
+  if (!req.cookies["user_id"]) {
+    return res.status('403').send('ERROR - 403 - User must be logged in to submit URLs')
+  }
+
   let shortURL = generateRandomString()
   let longURL = req.body.longURL;
   Object.assign(urlDatabase, { [shortURL]: longURL });
@@ -87,7 +91,7 @@ app.post("/urls", (req, res) => {
     // username: req.cookies["username"]
     user: req.cookies["user_id"],
   };
-  res.render("urls_show", newVars)
+  return res.render("urls_show", newVars)
 
 })
 
@@ -105,6 +109,10 @@ app.post("/u/:shortURL/delete", (req, res) => {
 
 
 app.get("/urls/new", (req, res) => {
+  if (!req.cookies["user_id"]) {
+    return res.redirect("/login");
+  }
+
   const templateVars = {
     // username: req.cookies["username"],
     user: req.cookies["user_id"],
@@ -162,11 +170,18 @@ app.get("/urls/:shortURL", (req, res) => {
 // })
 
 app.get("/login", (req, res) => {
+
+  if (req.cookies["user_id"]) {
+    return res.redirect("/urls");
+  }
+
   const templateVars = {
     user: req.cookies["user_id"],
     urls: urlDatabase
   };
-  res.render("login_form", templateVars);
+
+
+  return res.render("login_form", templateVars);
 })
 
 app.post("/login", (req, res) => {
@@ -198,19 +213,25 @@ app.post("/login", (req, res) => {
 
 //log out
 app.post("/logout", (req, res) => {
+  if (req.cookies["user_id"]) {
   res.clearCookie("user_id")
   res.redirect("/urls");
+  }
 })
 
 
 //registration page
 app.get("/register", (req, res) => {
+  if (req.cookies["user_id"]) {
+    return res.redirect("/urls");
+  }
+
   const templateVars = {
     // username: req.cookies["username"],
     user: req.cookies["user_id"],
     urls: urlDatabase
   };
-  res.render("registration", templateVars);
+  return res.render("registration", templateVars);
 })
 
 
