@@ -1,3 +1,5 @@
+
+   
 <!DOCTYPE html>
 <html land="en">
   <head>
@@ -24,15 +26,15 @@
           </tr>
         </thead>
         <tbody>
+
           <% for(let url in urls) { %>
             <tr>
               <td><%= url %></td>
-              <td><%= urls[url] %></td>
+              <td><%= urls[url].longURL %></td>
               <td><a href="/urls/<%= url %>"><button type="button" class="btn btn-success">Edit</button></a></td>
               <td><form method="POST" action="/u/<%= url %>/delete"><button type="submit" class="btn btn-danger">Delete</button></form></td>
         
             </tr>
-
           <% } %>
  
         </tbody>

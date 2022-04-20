@@ -14,6 +14,17 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 }
 
+const urlDatabaseObject = {
+  b6UTxQ: {
+    longURL: "https://www.tsn.ca",
+    userID: "aJ48lW"
+  },
+  i3BoGr: {
+    longURL: "https://www.google.ca",
+    userID: "aJ48lW"
+  }
+};
+
 const users = {
   "userRandomID": {
     id: "userRandomID",
@@ -71,10 +82,13 @@ app.get("/urls", (req, res) => {
   const templateVars = {
     // username: req.cookies["username"],
     user: req.cookies["user_id"],
-    urls: urlDatabase
+    urls: urlDatabaseObject
   };
+
+  // console.log(templateVars)
   res.render("urls_index", templateVars);
 });
+
 
 //creates a new entry
 app.post("/urls", (req, res) => {
@@ -82,32 +96,39 @@ app.post("/urls", (req, res) => {
     return res.status('403').send('ERROR - 403 - User must be logged in to submit URLs')
   }
 
-  let shortURL = generateRandomString()
-  let longURL = req.body.longURL;
-  Object.assign(urlDatabase, { [shortURL]: longURL });
-  const newVars = {
-    shortURL,
+  const shortURL = generateRandomString()
+  const longURL = req.body.longURL;
+  const userId = req.cookies["user_id"].id
+
+  urlDatabaseObject[shortURL] = {
     longURL,
-    // username: req.cookies["username"]
+    userId
+  }
+
+  const newVars = {
     user: req.cookies["user_id"],
+    shortURL,
+    longURL
   };
+
+  console.log(urlDatabaseObject)
   return res.render("urls_show", newVars)
 
 })
 
-//delete an entry
-app.post("/u/:shortURL/delete", (req, res) => {
-  console.log("urlDatabase[req.params.shortURL]:", urlDatabase[req.params.shortURL])
-  delete urlDatabase[req.params.shortURL];
+
+//delete an entry 
+app.post("/u/:shortURL/delete", (req, res) => {  
+  delete urlDatabaseObject[req.params.shortURL];
   const newTemplateVars = {
-    // username: req.cookies["username"],
     user: req.cookies["user_id"],
-    urls: urlDatabase
+    urls: urlDatabaseObject
   };
   res.render("urls_index", newTemplateVars)
 })
 
 
+//new URL submission page
 app.get("/urls/new", (req, res) => {
   if (!req.cookies["user_id"]) {
     return res.redirect("/login");
@@ -116,8 +137,10 @@ app.get("/urls/new", (req, res) => {
   const templateVars = {
     // username: req.cookies["username"],
     user: req.cookies["user_id"],
-    urls: urlDatabase
+    urls: urlDatabaseObject
   };
+
+  console.log(urlDatabaseObject);
   res.render("urls_new", templateVars);
 });
 
@@ -126,49 +149,44 @@ app.get("/urls/new", (req, res) => {
 //redirects to external site
 app.get("/u/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
-  const longURL = urlDatabase[shortURL];
+  const longURL = urlDatabaseObject[shortURL].longURL;
   res.redirect(longURL);
 })
+
 
 //changes longURL entry
 app.post("/urls/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL
-  delete urlDatabase[shortURL];
-  let longURL = req.body.longURL;
-  Object.assign(urlDatabase, { [shortURL]: longURL });
+  const newLongURL = req.body.longURL
+
+  urlDatabaseObject[shortURL].longURL = newLongURL
+
   const updatedDatabase = {
     shortURL,
-    longURL,
-    // username: req.cookies["username"]
+    longURL: newLongURL,
     user: req.cookies["user_id"],
   };
   res.render("urls_show", updatedDatabase)
 })
 
 
+//Show short urls page
 app.get("/urls/:shortURL", (req, res) => {
+  if (!urlDatabaseObject[req.params.shortURL]) {
+    return res.status('404').send('ERROR - 404 - This short URL doesn\'t exist in our database. Please try another')
+  }
+
+  const shortURL = req.params.shortURL
   const templateVars = {
-    shortURL: req.params.shortURL,
-    longURL: urlDatabase[req.params.shortURL],
-    // username: req.cookies["username"]
     user: req.cookies["user_id"],
+    shortURL,
+    longURL: urlDatabaseObject[shortURL].longURL
   };
-  res.render("urls_show", templateVars);
+  return res.render("urls_show", templateVars);
 });
 
-// //set a username --- OLD
-// app.post("/login", (req, res) => {
-//   const newUser = req.body.username;
-//   res.cookie("username", newUser)
-//   const templateVars = { 
-//     urls: urlDatabase,
-//     // username: req.cookies["username"]
-//     user: req.cookies["user_id"],
-//   };
-//   res.redirect("/urls");
-//   // res.render("urls_index", templateVars);
-// })
 
+//Shows login form
 app.get("/login", (req, res) => {
 
   if (req.cookies["user_id"]) {
@@ -177,13 +195,14 @@ app.get("/login", (req, res) => {
 
   const templateVars = {
     user: req.cookies["user_id"],
-    urls: urlDatabase
+    urls: urlDatabaseObject
   };
-
 
   return res.render("login_form", templateVars);
 })
 
+
+//login form submission
 app.post("/login", (req, res) => {
   const enteredEmail = req.body.email;
   const enteredPassword = req.body.password;
@@ -227,9 +246,8 @@ app.get("/register", (req, res) => {
   }
 
   const templateVars = {
-    // username: req.cookies["username"],
     user: req.cookies["user_id"],
-    urls: urlDatabase
+    urls: urlDatabaseObject
   };
   return res.render("registration", templateVars);
 })
@@ -252,12 +270,15 @@ app.post("/register", (req, res) => {
   }
 
   const newUserId = generateRandomString();
+
   const newUserObject = {
     id: newUserId,
     email: req.body.email,
     password: req.body.password
   }
+
   users[newUserId] = newUserObject;
+
   res.cookie("user_id", newUserObject)
   res.redirect("/urls");
 })
