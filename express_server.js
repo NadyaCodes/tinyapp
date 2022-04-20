@@ -37,6 +37,15 @@ function generateRandomString() {
   return randomString;
 }
 
+function findMatchingEmail(usersObject, email) {
+  for (let id in usersObject) {
+    if (usersObject[id].email === email) {
+      return true;
+    }
+  }
+}
+
+
 app.get("/", (req, res) => {
   res.send("Hello!");
 });
@@ -184,7 +193,31 @@ app.get("/register", (req, res) => {
 
 // }
 
+
+// function findMatchingEmail(usersObject, email) {
+//   for (let id in usersObject) {
+//     if (usersObject[id].email === email) {
+//       return true;
+//     }
+//   }
+// }
+
 app.post("/register", (req, res) => {
+  if (req.body.email === '') {
+    res.status('400').send('ERROR - 400 - Please enter a valid email address')
+    return;
+  }
+
+  if (req.body.password === '') {
+    res.status('400').send('ERROR - 400 - Please create a unique password')
+    return;
+  }
+
+  if (findMatchingEmail(users, req.body.email)) {
+    res.status('400').send('ERROR - 400 - User email already exists. Contact us for a replacement password (or try some golden oldies).')
+    return;
+  }
+
   const newUserId = generateRandomString();
   const newUserObject = {
     id: newUserId,
