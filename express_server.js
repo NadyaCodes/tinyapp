@@ -9,10 +9,10 @@ app.use(cookieParser());
 
 app.set("view engine", "ejs");
 
-const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
-}
+// const urlDatabase = {
+//   "b2xVn2": "http://www.lighthouselabs.ca",
+//   "9sm5xK": "http://www.google.com"
+// }
 
 const urlDatabaseObject = {
   b6UTxQ: {
@@ -56,6 +56,17 @@ function findMatchingEmail(usersObject, email) {
   }
 }
 
+function urlsForUser(userId) {
+  let myURLs = {};
+
+  for (let key in urlDatabaseObject) {
+    if(urlDatabaseObject[key].userID === userId) {
+        myURLs[key] = urlDatabaseObject[key]
+    }
+  }
+  return myURLs
+}
+
 
 app.get("/", (req, res) => {
   res.send("Hello!");
@@ -79,14 +90,34 @@ app.listen(PORT, () => {
 
 
 app.get("/urls", (req, res) => {
+  if (!req.cookies["user_id"]) {
+    const templateVars = { 
+      errorMessage: "ERROR - 403 - User must be logged in to view URLs. Please register for an account.",
+      user: req.cookies["user_id"]
+    }
+    return res.render("no_access", templateVars)
+  }
+
+  // console.log("in /urls get request")
+
+  const userId = req.cookies["user_id"].id
+  
+  // console.log("user: ", user)
+  // console.log("userId:", userId)
+  // console.log("urlDatabaseObject3:", urlDatabaseObject)
+  let userURLs = urlsForUser(userId);
+  
+
+  // console.log("userURLs: ", userURLs)
+
   const templateVars = {
     // username: req.cookies["username"],
     user: req.cookies["user_id"],
-    urls: urlDatabaseObject
+    urls: userURLs
   };
 
   // console.log(templateVars)
-  res.render("urls_index", templateVars);
+  return res.render("urls_index", templateVars);
 });
 
 
@@ -96,23 +127,34 @@ app.post("/urls", (req, res) => {
     return res.status('403').send('ERROR - 403 - User must be logged in to submit URLs')
   }
 
+  console.log("in /urls post request")
   const shortURL = generateRandomString()
   const longURL = req.body.longURL;
-  const userId = req.cookies["user_id"].id
+  const userID = req.cookies["user_id"].id
+
 
   urlDatabaseObject[shortURL] = {
     longURL,
-    userId
+    userID
   }
 
-  const newVars = {
+  // const userURLs = findMyURLs(userId, urlDatabaseObject)
+
+  // const newVars = {
+  //   user: req.cookies["user_id"],
+  //   shortURL,
+  //   longURL
+  // };
+  const templateVars = {
+    // username: req.cookies["username"],
     user: req.cookies["user_id"],
+    urls: urlDatabaseObject,
     shortURL,
     longURL
   };
 
-  console.log(urlDatabaseObject)
-  return res.render("urls_show", newVars)
+  // console.log(urlDatabaseObject)
+  return res.render("urls_show", templateVars)
 
 })
 
@@ -133,14 +175,29 @@ app.get("/urls/new", (req, res) => {
   if (!req.cookies["user_id"]) {
     return res.redirect("/login");
   }
+  console.log("in /urls/new get request")
 
+// userURLs = findMyURLs(req.cookies["user_id"].id, urlDatabaseObject)
+
+  // const newVars = {
+  //   user: req.cookies["user_id"],
+  //   shortURL,
+  //   longURL
+  // };
+  // const templateVars = {
+  //   // username: req.cookies["username"],
+  //   user: req.cookies["user_id"],
+  //   urls: userURLs,
+  //   shortURL,
+  //   longURL
+  // };
   const templateVars = {
     // username: req.cookies["username"],
     user: req.cookies["user_id"],
     urls: urlDatabaseObject
   };
 
-  console.log(urlDatabaseObject);
+  // console.log(userURLs);
   res.render("urls_new", templateVars);
 });
 
@@ -175,6 +232,11 @@ app.get("/urls/:shortURL", (req, res) => {
   if (!urlDatabaseObject[req.params.shortURL]) {
     return res.status('404').send('ERROR - 404 - This short URL doesn\'t exist in our database. Please try another')
   }
+
+  // const userId = eq.cookies["user_id"].id
+  // const userURLs = urlsForUser(userId)
+
+  // for (let i = )
 
   const shortURL = req.params.shortURL
   const templateVars = {
