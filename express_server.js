@@ -2,19 +2,15 @@ const express = require('express');
 const app = express();
 const PORT = 8080;
 const bodyParser = require("body-parser");
-// const cookieParser = require('cookie-parser');
 const cookieSession = require('cookie-session');
 const bcrypt = require('bcryptjs');
 const salt = bcrypt.genSaltSync(10);
 const { getUserByEmail, generateRandomString } = require('./helpers.js');
 app.use(bodyParser.urlencoded({ extended: true }));
-// app.use(cookieParser());
 app.use(cookieSession({
   name: 'session',
   keys: ['This is my first key'],
 }));
-// const res = require('express/lib/response');
-
 
 app.set("view engine", "ejs");
 
@@ -60,7 +56,7 @@ const users = {
 
 };
 
-//CHECKED AND CONFIRMED
+
 app.get("/", (req, res) => {
   if (req.session.user_id) {
     return res.redirect("/urls");
@@ -70,7 +66,7 @@ app.get("/", (req, res) => {
 });
 
 
-//CHECKED AND CONFIRMED
+
 app.get("/urls", (req, res) => {
   if (!req.session.user_id) {
     const templateVars = {
@@ -81,25 +77,15 @@ app.get("/urls", (req, res) => {
     return res.render("no_access", templateVars);
   }
 
-  // console.log("in /urls get request")
 
   const userId = req.session.user_id;
-  
-  // console.log("user: ", user)
-  // console.log("userId:", userId)
-  // console.log("urlDatabaseObject3:", urlDatabaseObject)
   let userURLs = urlsForUser(userId);
-  
-
-  // console.log("userURLs: ", userURLs)
 
   const templateVars = {
-    // username: req.cookies["username"],
     user: users[userId],
     urls: userURLs
   };
 
-  // console.log(templateVars)
   return res.render("urls_index", templateVars);
 });
 
@@ -115,7 +101,6 @@ app.post("/urls", (req, res) => {
     return res.render("no_access", templateVars);
   }
 
-  // console.log("in /urls post request")
   const shortURL = generateRandomString();
   const longURL = req.body.longURL;
   const userID = req.session.user_id;
@@ -125,21 +110,7 @@ app.post("/urls", (req, res) => {
     userID
   };
 
-  let userURLs = urlsForUser(userID);
-
-  const templateVars = {
-    // username: req.cookies["username"],
-    user: users[userID],
-    urls: userURLs,
-    shortURL,
-    longURL
-  };
-
-  // console.log("templateVars: ", templateVars)
-
-  // console.log(urlDatabaseObject)
   res.redirect(`./urls/${shortURL}`);
-
 });
 
 
@@ -161,16 +132,6 @@ app.post("/urls/:id/delete", (req, res) => {
   for (let key in userURLs) {
     if (shortURL === key) {
       delete urlDatabaseObject[req.params.id];
-
-      // const userId = req.session.user_id
-      
-      // let userURLs = urlsForUser(userId);
-      
-    
-      // const newTemplateVars = {
-      //   user: users[userId],
-      //   urls: userURLs
-      // };
       res.redirect("/urls");
     }
   }
@@ -181,20 +142,6 @@ app.post("/urls/:id/delete", (req, res) => {
   };
   res.status('403');
   return res.render("no_access", templateVars);
-
-  // delete urlDatabaseObject[req.params.id];
-
-
-  // const userId = req.session.user_id
-  
-  // let userURLs = urlsForUser(userId);
-  
-
-  // // const newTemplateVars = {
-  // //   user: users[userId],
-  // //   urls: userURLs
-  // // };
-  // res.redirect("/urls")
 });
 
 
@@ -207,12 +154,9 @@ app.get("/urls/new", (req, res) => {
 
   const userId = req.session.user_id;
   const templateVars = {
-    // username: req.cookies["username"],
     user: users[userId],
     urls: urlDatabaseObject
   };
-
-  // console.log(userURLs);
   res.render("urls_new", templateVars);
 });
 
@@ -220,16 +164,6 @@ app.get("/urls/new", (req, res) => {
 
 //redirects to external site
 app.get("/u/:id", (req, res) => {
-
-  // if (!req.session.user_id) {
-  //   const userID = req.session.user_id;
-  //   const templateVars = {
-  //     errorMessage: "ERROR - 403 - User must be logged in to view URLs. Please login or register for an account.",
-  //     user: users[userID]
-  //   };
-  //   res.status('403');
-  //   return res.render("no_access", templateVars);
-  // }
 
   if (!urlDatabaseObject[req.params.id]) {
     const templateVars = {
@@ -240,19 +174,13 @@ app.get("/u/:id", (req, res) => {
     return res.render("no_access", templateVars);
   }
 
-
-
-
-
-  
-
   const shortURL = req.params.id;
   const longURL = urlDatabaseObject[shortURL].longURL;
   res.redirect(longURL);
 });
 
 
-//changes longURL entry SHOULD ALSO PREVENT OTHER LOGGED INS TO ACCESS THIS
+//changes longURL entry
 app.post("/urls/:id", (req, res) => {
 
   if (!req.session.user_id) {
@@ -291,23 +219,6 @@ app.post("/urls/:id", (req, res) => {
   };
   res.status('403');
   return res.render("no_access", templateVars);
-
-
-
-  // const shortURL = req.params.id
-  // const newLongURL = req.body.longURL
-  // const userId = req.session.user_id
-
- 
-
-  // const updatedDatabase = {
-  //   shortURL,
-  //   longURL: newLongURL,
-  //   user: users[userId],
-  // };
-  // return res.redirect("/urls")
-
-
 
 });
 
@@ -404,9 +315,6 @@ app.post("/login", (req, res) => {
     res.status('403');
     return res.render("no_access", templateVars);
   }
-
-  // console.log(req.session.user_id)
-  // res.cookie("user_id", user)
   res.redirect("/urls");
 });
 
@@ -414,8 +322,6 @@ app.post("/login", (req, res) => {
 
 //log out
 app.post("/logout", (req, res) => {
-
-  ///or delete req.session.user_id
   if (req.session.user_id) {
     req.session = null;
     res.redirect("/urls");
@@ -425,16 +331,10 @@ app.post("/logout", (req, res) => {
 
 //registration page
 app.get("/register", (req, res) => {
-  // req.session.user_id = newUserId
-  // console.log(req.session.user_id)
+
   if (req.session.user_id) {
     return res.redirect("/urls");
   }
-
-  // req.session.user_id = null;
-  // const userId = req.session.user_id
-  // const userObject = users[userId]
-
   const templateVars = {
     user: null,
     urls: urlDatabaseObject
@@ -486,30 +386,5 @@ app.post("/register", (req, res) => {
   users[newUserId] = newUserObject;
 
   req.session.user_id = newUserId;
-  // console.log(req.session.user_id)
-
-  // res.cookie("user_id", newUserObject)
   res.redirect("/urls");
 });
-
-
-
-
-
-//This page probably not needed
-// app.get("/hello", (req, res) => {
-//   res.send("<html><body>Hello <b>World</b></body></html>\n")
-// });
-
-
-
-// THESE WERE HERE AS A DEMONSTRATION THAT VARIABLES AREN'T PASSED ALONG
-// app.get("/set", (req, res) => {
-//   const a = 1;
-//   res.send(`a = ${a}`);
-// });
-
-
-// app.get("/fetch", (req, res) => {
-//   res.send(`a = ${a}`);
-// });

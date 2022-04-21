@@ -4,19 +4,19 @@ const getUserByEmail = function(email, database) {
       return database[key];
     }
   }
-}
+};
 
 
-function generateRandomString() {
-  let randomString = ""
-  const stringOptions = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+const generateRandomString = function() {
+  let randomString = "";
+  const stringOptions = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   for (let i = 0; i < 6; i++) {
-    randomString += stringOptions[Math.floor(Math.random() * stringOptions.length)]
+    randomString += stringOptions[Math.floor(Math.random() * stringOptions.length)];
   }
   return randomString;
-}
+};
 
-module.exports = { 
-  getUserByEmail, 
+module.exports = {
+  getUserByEmail,
   generateRandomString,
-}
+};
