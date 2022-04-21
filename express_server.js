@@ -92,7 +92,7 @@ app.listen(PORT, () => {
 app.get("/urls", (req, res) => {
   if (!req.cookies["user_id"]) {
     const templateVars = { 
-      errorMessage: "ERROR - 403 - User must be logged in to view URLs. Please register for an account.",
+      errorMessage: "ERROR - 403 - User must be logged in to view URLs. Please login or register for an account.",
       user: req.cookies["user_id"]
     }
     return res.render("no_access", templateVars)
@@ -133,27 +133,27 @@ app.post("/urls", (req, res) => {
   const userID = req.cookies["user_id"].id
 
 
+
+
   urlDatabaseObject[shortURL] = {
     longURL,
     userID
   }
 
-  // const userURLs = findMyURLs(userId, urlDatabaseObject)
+  let userURLs = urlsForUser(userID);
 
-  // const newVars = {
-  //   user: req.cookies["user_id"],
-  //   shortURL,
-  //   longURL
-  // };
   const templateVars = {
     // username: req.cookies["username"],
     user: req.cookies["user_id"],
-    urls: urlDatabaseObject,
+    urls: userURLs,
     shortURL,
     longURL
   };
 
+  // console.log("templateVars: ", templateVars)
+
   // console.log(urlDatabaseObject)
+
   return res.render("urls_show", templateVars)
 
 })
@@ -161,10 +161,21 @@ app.post("/urls", (req, res) => {
 
 //delete an entry 
 app.post("/u/:shortURL/delete", (req, res) => {  
+  if (!req.cookies["user_id"]) {
+    return res.status('403').send('ERROR - 403 - User must be logged in to submit URLs')
+  }
+
   delete urlDatabaseObject[req.params.shortURL];
+
+
+  const userId = req.cookies["user_id"].id
+  
+  let userURLs = urlsForUser(userId);
+  
+
   const newTemplateVars = {
     user: req.cookies["user_id"],
-    urls: urlDatabaseObject
+    urls: userURLs
   };
   res.render("urls_index", newTemplateVars)
 })
@@ -175,7 +186,6 @@ app.get("/urls/new", (req, res) => {
   if (!req.cookies["user_id"]) {
     return res.redirect("/login");
   }
-  console.log("in /urls/new get request")
 
 // userURLs = findMyURLs(req.cookies["user_id"].id, urlDatabaseObject)
 
@@ -205,6 +215,13 @@ app.get("/urls/new", (req, res) => {
 
 //redirects to external site
 app.get("/u/:shortURL", (req, res) => {
+  if (!req.cookies["user_id"]) {
+    const templateVars = { 
+      errorMessage: "ERROR - 403 - User must be logged in to view URLs. Please login or register for an account.",
+      user: req.cookies["user_id"]
+    }
+    return res.render("no_access", templateVars)
+  }
   const shortURL = req.params.shortURL;
   const longURL = urlDatabaseObject[shortURL].longURL;
   res.redirect(longURL);
@@ -213,6 +230,10 @@ app.get("/u/:shortURL", (req, res) => {
 
 //changes longURL entry
 app.post("/urls/:shortURL", (req, res) => {
+  if (!req.cookies["user_id"]) {
+    return res.status('403').send('ERROR - 403 - User must be logged in to change URLs')
+  }
+
   const shortURL = req.params.shortURL
   const newLongURL = req.body.longURL
 
@@ -229,22 +250,38 @@ app.post("/urls/:shortURL", (req, res) => {
 
 //Show short urls page
 app.get("/urls/:shortURL", (req, res) => {
+  if (!req.cookies["user_id"]) {
+    const templateVars = { 
+      errorMessage: "ERROR - 403 - User must be logged in to view URLs. Please login or register for an account.",
+      user: req.cookies["user_id"]
+    }
+    return res.render("no_access", templateVars)
+  }
+
   if (!urlDatabaseObject[req.params.shortURL]) {
     return res.status('404').send('ERROR - 404 - This short URL doesn\'t exist in our database. Please try another')
   }
 
-  // const userId = eq.cookies["user_id"].id
-  // const userURLs = urlsForUser(userId)
-
-  // for (let i = )
-
+  const userId = req.cookies["user_id"].id
+  const userURLs = urlsForUser(userId)
   const shortURL = req.params.shortURL
-  const templateVars = {
-    user: req.cookies["user_id"],
-    shortURL,
-    longURL: urlDatabaseObject[shortURL].longURL
-  };
-  return res.render("urls_show", templateVars);
+
+  for (let key in userURLs) {
+    if (shortURL === key) {
+      const templateVars = {
+        user: req.cookies["user_id"],
+        shortURL,
+        longURL: userURLs[shortURL].longURL
+ 
+      };
+      return res.render("urls_show", templateVars);
+    }
+  }
+  const templateVars = { 
+    errorMessage: "ERROR - 403 - User can only view their own URLs. Please login to another account to access.",
+    user: req.cookies["user_id"]
+  }
+  return res.render("no_access", templateVars)
 });
 
 
