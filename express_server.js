@@ -3,6 +3,7 @@ const app = express();
 const PORT = 8080;
 const bodyParser = require("body-parser");
 const cookieParser = require('cookie-parser');
+const bcrypt = require('bcryptjs');
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 // const res = require('express/lib/response');
@@ -29,12 +30,12 @@ const users = {
   "userRandomID": {
     id: "userRandomID",
     email: "user@example.com",
-    password: "purple-monkey-dinosaur"
+    password: bcrypt.hashSync("purple-monkey-dinosaur", 10)
   },
   "user2RandomID": {
     id: "user2RandomID",
     email: "user2@example.com",
-    password: "dishwasher-funk"
+    password: bcrypt.hashSync("dishwasher-funk", 10)
   }
 
 }
@@ -305,6 +306,7 @@ app.get("/login", (req, res) => {
 app.post("/login", (req, res) => {
   const enteredEmail = req.body.email;
   const enteredPassword = req.body.password;
+
   let user;
   if (!findMatchingEmail(users, enteredEmail)) {
     res.status('403').send('ERROR - 403 - Email not in database.')
@@ -313,11 +315,14 @@ app.post("/login", (req, res) => {
 
   if (findMatchingEmail(users, req.body.email)) {
     for (let id in users) {
-      if ((users[id].email === enteredEmail) && (users[id].password === enteredPassword)) {
+      const hashedPassword = users[id].password
+      if ((users[id].email === enteredEmail) && bcrypt.compareSync(enteredPassword, hashedPassword)) {
         user = users[id]
       }
     }
   }
+
+  console.log(users);
 
   if (!user) {
     res.status('403').send('ERROR - 403 - Incorrect Password. Please try again.')
@@ -369,11 +374,13 @@ app.post("/register", (req, res) => {
   }
 
   const newUserId = generateRandomString();
+  const password = req.body.password;
+  const hashedPassword = bcrypt.hashSync(password, 10);
 
   const newUserObject = {
     id: newUserId,
     email: req.body.email,
-    password: req.body.password
+    password: hashedPassword
   }
 
   users[newUserId] = newUserObject;
