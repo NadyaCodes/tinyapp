@@ -5,7 +5,6 @@ const bodyParser = require("body-parser");
 const cookieSession = require('cookie-session');
 const bcrypt = require('bcryptjs');
 const salt = bcrypt.genSaltSync(10);
-const { getUserByEmail, generateRandomString } = require('./helpers.js');
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieSession({
   name: 'session',
@@ -18,6 +17,8 @@ app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
 
+
+const { getUserByEmail, generateRandomString } = require('./helpers.js');
 
 const urlsForUser = function(userId) {
   let myURLs = {};
