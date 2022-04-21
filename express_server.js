@@ -3,16 +3,16 @@ const app = express();
 const PORT = 8080;
 const bodyParser = require("body-parser");
 // const cookieParser = require('cookie-parser');
-const cookieSession = require('cookie-session')
+const cookieSession = require('cookie-session');
 const bcrypt = require('bcryptjs');
-const salt = bcrypt.genSaltSync(10)
-const { getUserByEmail, generateRandomString } = require('./helpers.js')
+const salt = bcrypt.genSaltSync(10);
+const { getUserByEmail, generateRandomString } = require('./helpers.js');
 app.use(bodyParser.urlencoded({ extended: true }));
 // app.use(cookieParser());
 app.use(cookieSession({
   name: 'session',
   keys: ['This is my first key'],
-}))
+}));
 // const res = require('express/lib/response');
 
 
@@ -23,16 +23,16 @@ app.listen(PORT, () => {
 });
 
 
-function urlsForUser(userId) {
+const urlsForUser = function(userId) {
   let myURLs = {};
 
   for (let key in urlDatabaseObject) {
-    if(urlDatabaseObject[key].userID === userId) {
-        myURLs[key] = urlDatabaseObject[key]
+    if (urlDatabaseObject[key].userID === userId) {
+      myURLs[key] = urlDatabaseObject[key];
     }
   }
-  return myURLs
-}
+  return myURLs;
+};
 
 
 const urlDatabaseObject = {
@@ -58,31 +58,32 @@ const users = {
     password: bcrypt.hashSync("dishwasher-funk", salt)
   }
 
-}
+};
 
-
+//CHECKED AND CONFIRMED
 app.get("/", (req, res) => {
   if (req.session.user_id) {
     return res.redirect("/urls");
   } else {
-    return res.redirect("/login")
+    return res.redirect("/login");
   }
 });
 
 
+//CHECKED AND CONFIRMED
 app.get("/urls", (req, res) => {
   if (!req.session.user_id) {
-    const templateVars = { 
+    const templateVars = {
       errorMessage: "ERROR - 403 - User must be logged in to view URLs. Please login or register for an account.",
       user: null
-    }
-    res.status('403')
-    return res.render("no_access", templateVars)
+    };
+    res.status('403');
+    return res.render("no_access", templateVars);
   }
 
   // console.log("in /urls get request")
 
-  const userId = req.session.user_id
+  const userId = req.session.user_id;
   
   // console.log("user: ", user)
   // console.log("userId:", userId)
@@ -106,23 +107,23 @@ app.get("/urls", (req, res) => {
 //creates a new entry
 app.post("/urls", (req, res) => {
   if (!req.session.user_id) {
-    const templateVars = { 
+    const templateVars = {
       errorMessage: "ERROR - 403 - User must be logged in to submit URLs",
       user: null
-    }
-    res.status('403')
-    return res.render("no_access", templateVars)
+    };
+    res.status('403');
+    return res.render("no_access", templateVars);
   }
 
   // console.log("in /urls post request")
-  const shortURL = generateRandomString()
+  const shortURL = generateRandomString();
   const longURL = req.body.longURL;
-  const userID = req.session.user_id
+  const userID = req.session.user_id;
 
   urlDatabaseObject[shortURL] = {
     longURL,
     userID
-  }
+  };
 
   let userURLs = urlsForUser(userID);
 
@@ -137,36 +138,64 @@ app.post("/urls", (req, res) => {
   // console.log("templateVars: ", templateVars)
 
   // console.log(urlDatabaseObject)
-  return res.render("urls_show", templateVars)
+  res.redirect(`./urls/${shortURL}`);
 
-})
+});
 
 
-//delete an entry 
-app.post("/urls/:id/delete", (req, res) => {  
+//delete an entry
+app.post("/urls/:id/delete", (req, res) => {
   if (!req.session.user_id) {
-    const templateVars = { 
+    const templateVars = {
       errorMessage: "ERROR - 403 - User must be logged in to delete URLs",
       user: null
-    }
-    res.status('403')
-    return res.render("no_access", templateVars)
+    };
+    res.status('403');
+    return res.render("no_access", templateVars);
   }
 
-  delete urlDatabaseObject[req.params.id];
+  const userId = req.session.user_id;
+  const userURLs = urlsForUser(userId);
+  const shortURL = req.params.id;
+
+  for (let key in userURLs) {
+    if (shortURL === key) {
+      delete urlDatabaseObject[req.params.id];
+
+      // const userId = req.session.user_id
+      
+      // let userURLs = urlsForUser(userId);
+      
+    
+      // const newTemplateVars = {
+      //   user: users[userId],
+      //   urls: userURLs
+      // };
+      res.redirect("/urls");
+    }
+  }
+
+  const templateVars = {
+    errorMessage: "ERROR - 403 - User can only delete their own URLs. Please login to another account to access.",
+    user: users[userId]
+  };
+  res.status('403');
+  return res.render("no_access", templateVars);
+
+  // delete urlDatabaseObject[req.params.id];
 
 
-  const userId = req.session.user_id
+  // const userId = req.session.user_id
   
-  let userURLs = urlsForUser(userId);
+  // let userURLs = urlsForUser(userId);
   
 
-  // const newTemplateVars = {
-  //   user: users[userId],
-  //   urls: userURLs
-  // };
-  res.redirect("/urls")
-})
+  // // const newTemplateVars = {
+  // //   user: users[userId],
+  // //   urls: userURLs
+  // // };
+  // res.redirect("/urls")
+});
 
 
 //new URL submission page
@@ -176,7 +205,7 @@ app.get("/urls/new", (req, res) => {
     return res.redirect("/login");
   }
 
-  const userId = req.session.user_id
+  const userId = req.session.user_id;
   const templateVars = {
     // username: req.cookies["username"],
     user: users[userId],
@@ -192,93 +221,123 @@ app.get("/urls/new", (req, res) => {
 //redirects to external site
 app.get("/u/:id", (req, res) => {
 
-  if (!req.session.user_id) {
-    const userID = req.session.user_id
-    const templateVars = { 
-      errorMessage: "ERROR - 403 - User must be logged in to view URLs. Please login or register for an account.",
-      user: users[userID]
-    }
-    res.status('403')
-    return res.render("no_access", templateVars)
-  }
+  // if (!req.session.user_id) {
+  //   const userID = req.session.user_id;
+  //   const templateVars = {
+  //     errorMessage: "ERROR - 403 - User must be logged in to view URLs. Please login or register for an account.",
+  //     user: users[userID]
+  //   };
+  //   res.status('403');
+  //   return res.render("no_access", templateVars);
+  // }
 
   if (!urlDatabaseObject[req.params.id]) {
-    const templateVars = { 
+    const templateVars = {
       errorMessage: "ERROR - 404 - This short URL doesn't exist in our database. Please try again",
       user: null
-    }
-    res.status('404')
-    return res.render("no_access", templateVars)
+    };
+    res.status('404');
+    return res.render("no_access", templateVars);
   }
+
+
+
+
+
+  
 
   const shortURL = req.params.id;
   const longURL = urlDatabaseObject[shortURL].longURL;
   res.redirect(longURL);
-})
+});
 
 
 //changes longURL entry SHOULD ALSO PREVENT OTHER LOGGED INS TO ACCESS THIS
 app.post("/urls/:id", (req, res) => {
 
   if (!req.session.user_id) {
-    const templateVars = { 
+    const templateVars = {
       errorMessage: "ERROR - 403 - User must be logged in to change URLs",
       user: null
-    }
-    res.status('403')
-    return res.render("no_access", templateVars)
+    };
+    res.status('403');
+    return res.render("no_access", templateVars);
   }
+
   if (!urlDatabaseObject[req.params.id]) {
-    const templateVars = { 
+    const templateVars = {
       errorMessage: "ERROR - 404 - This short URL doesn't exist in our database. Please try again",
       user: null
-    }
-    res.status('404')
-    return res.render("no_access", templateVars)
+    };
+    res.status('404');
+    return res.render("no_access", templateVars);
   }
 
-  const shortURL = req.params.id
-  const newLongURL = req.body.longURL
-  const userId = req.session.user_id
+  const userId = req.session.user_id;
+  const userURLs = urlsForUser(userId);
+  const shortURL = req.params.id;
 
-  urlDatabaseObject[shortURL].longURL = newLongURL
+  for (let key in userURLs) {
+    if (shortURL === key) {
+      const newLongURL = req.body.longURL;
+      urlDatabaseObject[shortURL].longURL = newLongURL;
+      return res.redirect("/urls");
+    }
+  }
+
+  const templateVars = {
+    errorMessage: "ERROR - 403 - User can only view their own URLs. Please login to another account to access.",
+    user: users[userId]
+  };
+  res.status('403');
+  return res.render("no_access", templateVars);
+
+
+
+  // const shortURL = req.params.id
+  // const newLongURL = req.body.longURL
+  // const userId = req.session.user_id
+
+ 
 
   // const updatedDatabase = {
   //   shortURL,
   //   longURL: newLongURL,
   //   user: users[userId],
   // };
-  return res.redirect("/urls")
-})
+  // return res.redirect("/urls")
 
 
-//Show short urls page 
+
+});
+
+
+//Show short urls page
 app.get("/urls/:id", (req, res) => {
 
   if (!req.session.user_id) {
-    const templateVars = { 
+    const templateVars = {
       errorMessage: "ERROR - 403 - User must be logged in to view URLs. Please login or register for an account.",
       user: null
-    }
-    res.status('403')
-    return res.render("no_access", templateVars)
+    };
+    res.status('403');
+    return res.render("no_access", templateVars);
   }
 
   if (!urlDatabaseObject[req.params.id]) {
-    const templateVars = { 
+    const templateVars = {
       errorMessage: "ERROR - 404 - This short URL doesn't exist in our database. Please try again",
       user: null
-    }
-    res.status('404')
-    return res.render("no_access", templateVars)
+    };
+    res.status('404');
+    return res.render("no_access", templateVars);
   }
 
 
-  const userId = req.session.user_id
-  const userURLs = urlsForUser(userId)
-  const shortURL = req.params.id
 
-  // console.log(users[userId]);
+  const userId = req.session.user_id;
+  const userURLs = urlsForUser(userId);
+  const shortURL = req.params.id;
 
   for (let key in userURLs) {
     if (shortURL === key) {
@@ -291,19 +350,17 @@ app.get("/urls/:id", (req, res) => {
       return res.render("urls_show", templateVars);
     }
   }
-  const templateVars = { 
+  const templateVars = {
     errorMessage: "ERROR - 403 - User can only view their own URLs. Please login to another account to access.",
     user: users[userId]
-  }
-  return res.render("no_access", templateVars)
+  };
+  res.status('403');
+  return res.render("no_access", templateVars);
 });
 
 
-//Shows login form 
+//Shows login form
 app.get("/login", (req, res) => {
-
-    // req.session.user_id = newUserId
-  // console.log(req.session.user_id)
 
   if (req.session.user_id) {
     return res.redirect("/urls");
@@ -315,7 +372,7 @@ app.get("/login", (req, res) => {
   };
 
   return res.render("login_form", templateVars);
-})
+});
 
 
 //login form submission
@@ -326,32 +383,32 @@ app.post("/login", (req, res) => {
   let userObject = getUserByEmail(enteredEmail, users);
 
   if (!userObject) {
-    const templateVars = { 
+    const templateVars = {
       errorMessage: "ERROR - 403 - Email not in database.",
       user: null
-    }
-    res.status('403')
-    return res.render("no_access", templateVars)
+    };
+    res.status('403');
+    return res.render("no_access", templateVars);
   }
 
-  const hashedPassword = users[userObject.id].password
+  const hashedPassword = users[userObject.id].password;
   if (bcrypt.compareSync(enteredPassword, hashedPassword)) {
     req.session.user_id = userObject.id;
   }
 
   if (!req.session.user_id) {
-    const templateVars = { 
+    const templateVars = {
       errorMessage: "ERROR - 403 - Incorrect Password. Please try again.",
       user: null
-    }
-    res.status('403')
-    return res.render("no_access", templateVars)
+    };
+    res.status('403');
+    return res.render("no_access", templateVars);
   }
 
   // console.log(req.session.user_id)
   // res.cookie("user_id", user)
   res.redirect("/urls");
-})
+});
 
 
 
@@ -360,13 +417,13 @@ app.post("/logout", (req, res) => {
 
   ///or delete req.session.user_id
   if (req.session.user_id) {
-  req.session = null;
-  res.redirect("/urls");
+    req.session = null;
+    res.redirect("/urls");
   }
-})
+});
 
 
-//registration page 
+//registration page
 app.get("/register", (req, res) => {
   // req.session.user_id = newUserId
   // console.log(req.session.user_id)
@@ -383,37 +440,37 @@ app.get("/register", (req, res) => {
     urls: urlDatabaseObject
   };
   return res.render("registration", templateVars);
-})
+});
 
 
 app.post("/register", (req, res) => {
   if (req.body.email === '') {
-    const templateVars = { 
+    const templateVars = {
       errorMessage: "ERROR - 400 - Please enter a valid email address.",
       user: null
-    }
-    res.status('400')
-    return res.render("no_access", templateVars)
+    };
+    res.status('400');
+    return res.render("no_access", templateVars);
   }
 
   if (req.body.password === '') {
-    const templateVars = { 
+    const templateVars = {
       errorMessage: "ERROR - 400 - Please create a unique password.",
       user: null
-    }
-    res.status('400')
-    return res.render("no_access", templateVars)
+    };
+    res.status('400');
+    return res.render("no_access", templateVars);
   }
 
   const usernameExists = getUserByEmail(req.body.email, users);
 
   if (usernameExists) {
-    const templateVars = { 
+    const templateVars = {
       errorMessage: "ERROR - 400 - User email already exists. Contact us for a replacement password (or try some golden oldies).",
       user: null
-    }
-    res.status('400')
-    return res.render("no_access", templateVars)
+    };
+    res.status('400');
+    return res.render("no_access", templateVars);
   }
 
   const newUserId = generateRandomString();
@@ -424,16 +481,16 @@ app.post("/register", (req, res) => {
     id: newUserId,
     email: req.body.email,
     password: hashedPassword
-  }
+  };
 
   users[newUserId] = newUserObject;
 
-  req.session.user_id = newUserId
+  req.session.user_id = newUserId;
   // console.log(req.session.user_id)
 
   // res.cookie("user_id", newUserObject)
   res.redirect("/urls");
-})
+});
 
 
 
