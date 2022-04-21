@@ -6,7 +6,7 @@ const bodyParser = require("body-parser");
 const cookieSession = require('cookie-session')
 const bcrypt = require('bcryptjs');
 const salt = bcrypt.genSaltSync(10)
-const { getUserByEmail } = require('./helpers.js')
+const { getUserByEmail, generateRandomString } = require('./helpers.js')
 app.use(bodyParser.urlencoded({ extended: true }));
 // app.use(cookieParser());
 app.use(cookieSession({
@@ -16,14 +16,11 @@ app.use(cookieSession({
 // const res = require('express/lib/response');
 
 
-function generateRandomString() {
-  let randomString = ""
-  const stringOptions = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-  for (let i = 0; i < 6; i++) {
-    randomString += stringOptions[Math.floor(Math.random() * stringOptions.length)]
-  }
-  return randomString;
-}
+app.set("view engine", "ejs");
+
+app.listen(PORT, () => {
+  console.log(`Example app listening on port ${PORT}!`);
+});
 
 
 function urlsForUser(userId) {
@@ -37,12 +34,6 @@ function urlsForUser(userId) {
   return myURLs
 }
 
-app.set("view engine", "ejs");
-
-// const urlDatabase = {
-//   "b2xVn2": "http://www.lighthouselabs.ca",
-//   "9sm5xK": "http://www.google.com"
-// }
 
 const urlDatabaseObject = {
   b6UTxQ: {
@@ -69,11 +60,6 @@ const users = {
 
 }
 
-app.listen(PORT, () => {
-  console.log(`Example app listening on port ${PORT}!`);
-});
-
-
 
 app.get("/", (req, res) => {
   if (req.session.user_id) {
@@ -82,19 +68,6 @@ app.get("/", (req, res) => {
     return res.redirect("/login")
   }
 });
-
-
-// THIS IS THE ONE I DON'T KNOW IF I NEED
-// app.get("/urls.json", (req, res) => {
-//   res.json(urlDatabase);
-// })
-
-//FROM ZOOM CHAT
-// app.get("/u/:shortURL", (req, res) => {
-//   const shortURL = req.params.shortURL;
-//   const longURL = urlDatabase[shortURL];
-//   res.redirect(longURL);
-// });
 
 
 app.get("/urls", (req, res) => {
@@ -188,10 +161,10 @@ app.post("/urls/:id/delete", (req, res) => {
   let userURLs = urlsForUser(userId);
   
 
-  const newTemplateVars = {
-    user: users[userId],
-    urls: userURLs
-  };
+  // const newTemplateVars = {
+  //   user: users[userId],
+  //   urls: userURLs
+  // };
   res.redirect("/urls")
 })
 
@@ -203,20 +176,6 @@ app.get("/urls/new", (req, res) => {
     return res.redirect("/login");
   }
 
-// userURLs = findMyURLs(req.cookies["user_id"].id, urlDatabaseObject)
-
-  // const newVars = {
-  //   user: req.cookies["user_id"],
-  //   shortURL,
-  //   longURL
-  // };
-  // const templateVars = {
-  //   // username: req.cookies["username"],
-  //   user: req.cookies["user_id"],
-  //   urls: userURLs,
-  //   shortURL,
-  //   longURL
-  // };
   const userId = req.session.user_id
   const templateVars = {
     // username: req.cookies["username"],
@@ -233,8 +192,6 @@ app.get("/urls/new", (req, res) => {
 //redirects to external site
 app.get("/u/:id", (req, res) => {
 
-            // req.session.user_id = newUserId
-  // console.log(req.session.user_id)
   if (!req.session.user_id) {
     const userID = req.session.user_id
     const templateVars = { 
@@ -244,6 +201,16 @@ app.get("/u/:id", (req, res) => {
     res.status('403')
     return res.render("no_access", templateVars)
   }
+
+  if (!urlDatabaseObject[req.params.id]) {
+    const templateVars = { 
+      errorMessage: "ERROR - 404 - This short URL doesn't exist in our database. Please try again",
+      user: null
+    }
+    res.status('404')
+    return res.render("no_access", templateVars)
+  }
+
   const shortURL = req.params.id;
   const longURL = urlDatabaseObject[shortURL].longURL;
   res.redirect(longURL);
@@ -259,6 +226,14 @@ app.post("/urls/:id", (req, res) => {
       user: null
     }
     res.status('403')
+    return res.render("no_access", templateVars)
+  }
+  if (!urlDatabaseObject[req.params.id]) {
+    const templateVars = { 
+      errorMessage: "ERROR - 404 - This short URL doesn't exist in our database. Please try again",
+      user: null
+    }
+    res.status('404')
     return res.render("no_access", templateVars)
   }
 
