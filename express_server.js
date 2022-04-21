@@ -2,10 +2,15 @@ const express = require('express');
 const app = express();
 const PORT = 8080;
 const bodyParser = require("body-parser");
-const cookieParser = require('cookie-parser');
+// const cookieParser = require('cookie-parser');
+const cookieSession = require('cookie-session')
 const bcrypt = require('bcryptjs');
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(cookieParser());
+// app.use(cookieParser());
+app.use(cookieSession({
+  name: 'session',
+  keys: ['key1'],
+}))
 // const res = require('express/lib/response');
 
 app.set("view engine", "ejs");
@@ -91,17 +96,17 @@ app.listen(PORT, () => {
 
 
 app.get("/urls", (req, res) => {
-  if (!req.cookies["user_id"]) {
+  if (!req.session.user_id) {
     const templateVars = { 
       errorMessage: "ERROR - 403 - User must be logged in to view URLs. Please login or register for an account.",
-      user: req.cookies["user_id"]
+      user: null
     }
     return res.render("no_access", templateVars)
   }
 
   // console.log("in /urls get request")
 
-  const userId = req.cookies["user_id"].id
+  const userId = req.session.user_id
   
   // console.log("user: ", user)
   // console.log("userId:", userId)
@@ -113,7 +118,7 @@ app.get("/urls", (req, res) => {
 
   const templateVars = {
     // username: req.cookies["username"],
-    user: req.cookies["user_id"],
+    user: users[userId],
     urls: userURLs
   };
 
@@ -124,15 +129,14 @@ app.get("/urls", (req, res) => {
 
 //creates a new entry
 app.post("/urls", (req, res) => {
-  if (!req.cookies["user_id"]) {
+  if (!req.session.user_id) {
     return res.status('403').send('ERROR - 403 - User must be logged in to submit URLs')
   }
 
-  console.log("in /urls post request")
+  // console.log("in /urls post request")
   const shortURL = generateRandomString()
   const longURL = req.body.longURL;
-  const userID = req.cookies["user_id"].id
-
+  const userID = req.session.user_id
 
 
 
@@ -145,7 +149,7 @@ app.post("/urls", (req, res) => {
 
   const templateVars = {
     // username: req.cookies["username"],
-    user: req.cookies["user_id"],
+    user: users[userID],
     urls: userURLs,
     shortURL,
     longURL
@@ -162,20 +166,20 @@ app.post("/urls", (req, res) => {
 
 //delete an entry 
 app.post("/u/:shortURL/delete", (req, res) => {  
-  if (!req.cookies["user_id"]) {
+  if (!req.session.user_id) {
     return res.status('403').send('ERROR - 403 - User must be logged in to submit URLs')
   }
 
   delete urlDatabaseObject[req.params.shortURL];
 
 
-  const userId = req.cookies["user_id"].id
+  const userId = req.session.user_id
   
   let userURLs = urlsForUser(userId);
   
 
   const newTemplateVars = {
-    user: req.cookies["user_id"],
+    user: users[userId],
     urls: userURLs
   };
   res.render("urls_index", newTemplateVars)
@@ -184,7 +188,8 @@ app.post("/u/:shortURL/delete", (req, res) => {
 
 //new URL submission page
 app.get("/urls/new", (req, res) => {
-  if (!req.cookies["user_id"]) {
+  
+  if (!req.session.user_id) {
     return res.redirect("/login");
   }
 
@@ -202,9 +207,10 @@ app.get("/urls/new", (req, res) => {
   //   shortURL,
   //   longURL
   // };
+  const userId = req.session.user_id
   const templateVars = {
     // username: req.cookies["username"],
-    user: req.cookies["user_id"],
+    user: users[userId],
     urls: urlDatabaseObject
   };
 
@@ -216,10 +222,14 @@ app.get("/urls/new", (req, res) => {
 
 //redirects to external site
 app.get("/u/:shortURL", (req, res) => {
-  if (!req.cookies["user_id"]) {
+
+            // req.session.user_id = newUserId
+  // console.log(req.session.user_id)
+  if (!req.session.user_id) {
+    const userID = req.session.user_id
     const templateVars = { 
       errorMessage: "ERROR - 403 - User must be logged in to view URLs. Please login or register for an account.",
-      user: req.cookies["user_id"]
+      user: users[userID]
     }
     return res.render("no_access", templateVars)
   }
@@ -229,32 +239,35 @@ app.get("/u/:shortURL", (req, res) => {
 })
 
 
-//changes longURL entry
+//changes longURL entry SHOULD ALSO PREVENT OTHER LOGGED INS TO ACCESS THIS
 app.post("/urls/:shortURL", (req, res) => {
-  if (!req.cookies["user_id"]) {
+
+  if (!req.session.user_id) {
     return res.status('403').send('ERROR - 403 - User must be logged in to change URLs')
   }
 
   const shortURL = req.params.shortURL
   const newLongURL = req.body.longURL
+  const userId = req.session.user_id
 
   urlDatabaseObject[shortURL].longURL = newLongURL
 
   const updatedDatabase = {
     shortURL,
     longURL: newLongURL,
-    user: req.cookies["user_id"],
+    user: users[userId],
   };
   res.render("urls_show", updatedDatabase)
 })
 
 
-//Show short urls page
+//Show short urls page 
 app.get("/urls/:shortURL", (req, res) => {
-  if (!req.cookies["user_id"]) {
+
+  if (!req.session.user_id) {
     const templateVars = { 
       errorMessage: "ERROR - 403 - User must be logged in to view URLs. Please login or register for an account.",
-      user: req.cookies["user_id"]
+      user: null
     }
     return res.render("no_access", templateVars)
   }
@@ -263,14 +276,17 @@ app.get("/urls/:shortURL", (req, res) => {
     return res.status('404').send('ERROR - 404 - This short URL doesn\'t exist in our database. Please try another')
   }
 
-  const userId = req.cookies["user_id"].id
+
+  const userId = req.session.user_id
   const userURLs = urlsForUser(userId)
   const shortURL = req.params.shortURL
+
+  // console.log(users[userId]);
 
   for (let key in userURLs) {
     if (shortURL === key) {
       const templateVars = {
-        user: req.cookies["user_id"],
+        user: users[userId],
         shortURL,
         longURL: userURLs[shortURL].longURL
  
@@ -280,21 +296,24 @@ app.get("/urls/:shortURL", (req, res) => {
   }
   const templateVars = { 
     errorMessage: "ERROR - 403 - User can only view their own URLs. Please login to another account to access.",
-    user: req.cookies["user_id"]
+    user: users[userId]
   }
   return res.render("no_access", templateVars)
 });
 
 
-//Shows login form
+//Shows login form 
 app.get("/login", (req, res) => {
 
-  if (req.cookies["user_id"]) {
+    // req.session.user_id = newUserId
+  // console.log(req.session.user_id)
+
+  if (req.session.user_id) {
     return res.redirect("/urls");
   }
 
   const templateVars = {
-    user: req.cookies["user_id"],
+    user: null,
     urls: urlDatabaseObject
   };
 
@@ -317,18 +336,20 @@ app.post("/login", (req, res) => {
     for (let id in users) {
       const hashedPassword = users[id].password
       if ((users[id].email === enteredEmail) && bcrypt.compareSync(enteredPassword, hashedPassword)) {
-        user = users[id]
+        user = users[id].id
+        req.session.user_id = user;
       }
     }
   }
 
-  console.log(users);
 
   if (!user) {
     res.status('403').send('ERROR - 403 - Incorrect Password. Please try again.')
     return;
   }
-  res.cookie("user_id", user)
+
+  // console.log(req.session.user_id)
+  // res.cookie("user_id", user)
   res.redirect("/urls");
 })
 
@@ -336,21 +357,27 @@ app.post("/login", (req, res) => {
 
 //log out
 app.post("/logout", (req, res) => {
-  if (req.cookies["user_id"]) {
-  res.clearCookie("user_id")
+  if (req.session.user_id) {
+  req.session = null;
   res.redirect("/urls");
   }
 })
 
 
-//registration page
+//registration page 
 app.get("/register", (req, res) => {
-  if (req.cookies["user_id"]) {
+  // req.session.user_id = newUserId
+  // console.log(req.session.user_id)
+  if (req.session.user_id) {
     return res.redirect("/urls");
   }
 
+  // req.session.user_id = null;
+  // const userId = req.session.user_id
+  // const userObject = users[userId]
+
   const templateVars = {
-    user: req.cookies["user_id"],
+    user: null,
     urls: urlDatabaseObject
   };
   return res.render("registration", templateVars);
@@ -385,7 +412,10 @@ app.post("/register", (req, res) => {
 
   users[newUserId] = newUserObject;
 
-  res.cookie("user_id", newUserObject)
+  req.session.user_id = newUserId
+  // console.log(req.session.user_id)
+
+  // res.cookie("user_id", newUserObject)
   res.redirect("/urls");
 })
 
