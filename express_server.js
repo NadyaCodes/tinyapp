@@ -5,7 +5,7 @@ const bodyParser = require("body-parser");
 // const cookieParser = require('cookie-parser');
 const cookieSession = require('cookie-session')
 const bcrypt = require('bcryptjs');
-const { getUserByEmail, urlsForUser, generateRandomString } = require('./helpers.js')
+const { getUserByEmail } = require('./helpers.js')
 app.use(bodyParser.urlencoded({ extended: true }));
 // app.use(cookieParser());
 app.use(cookieSession({
@@ -13,6 +13,28 @@ app.use(cookieSession({
   keys: ['key1'],
 }))
 // const res = require('express/lib/response');
+
+
+function generateRandomString() {
+  let randomString = ""
+  const stringOptions = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+  for (let i = 0; i < 6; i++) {
+    randomString += stringOptions[Math.floor(Math.random() * stringOptions.length)]
+  }
+  return randomString;
+}
+
+
+function urlsForUser(userId) {
+  let myURLs = {};
+
+  for (let key in urlDatabaseObject) {
+    if(urlDatabaseObject[key].userID === userId) {
+        myURLs[key] = urlDatabaseObject[key]
+    }
+  }
+  return myURLs
+}
 
 app.set("view engine", "ejs");
 
@@ -46,14 +68,20 @@ const users = {
 
 }
 
-
-app.get("/", (req, res) => {
-  res.send("Hello!");
-});
-
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
+
+
+
+app.get("/", (req, res) => {
+  if (req.session.user_id) {
+    return res.redirect("/urls");
+  } else {
+    return res.redirect("/login")
+  }
+});
+
 
 // THIS IS THE ONE I DON'T KNOW IF I NEED
 // app.get("/urls.json", (req, res) => {
@@ -392,9 +420,9 @@ app.post("/register", (req, res) => {
 
 
 //This page probably not needed
-app.get("/hello", (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n")
-});
+// app.get("/hello", (req, res) => {
+//   res.send("<html><body>Hello <b>World</b></body></html>\n")
+// });
 
 
 
