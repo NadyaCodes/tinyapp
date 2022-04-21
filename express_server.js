@@ -170,7 +170,7 @@ app.post("/urls", (req, res) => {
 
 
 //delete an entry 
-app.post("/u/:shortURL/delete", (req, res) => {  
+app.post("/urls/:id/delete", (req, res) => {  
   if (!req.session.user_id) {
     const templateVars = { 
       errorMessage: "ERROR - 403 - User must be logged in to delete URLs",
@@ -180,7 +180,7 @@ app.post("/u/:shortURL/delete", (req, res) => {
     return res.render("no_access", templateVars)
   }
 
-  delete urlDatabaseObject[req.params.shortURL];
+  delete urlDatabaseObject[req.params.id];
 
 
   const userId = req.session.user_id
@@ -192,7 +192,7 @@ app.post("/u/:shortURL/delete", (req, res) => {
     user: users[userId],
     urls: userURLs
   };
-  res.render("urls_index", newTemplateVars)
+  res.redirect("/urls")
 })
 
 
@@ -231,7 +231,7 @@ app.get("/urls/new", (req, res) => {
 
 
 //redirects to external site
-app.get("/u/:shortURL", (req, res) => {
+app.get("/u/:id", (req, res) => {
 
             // req.session.user_id = newUserId
   // console.log(req.session.user_id)
@@ -244,14 +244,14 @@ app.get("/u/:shortURL", (req, res) => {
     res.status('403')
     return res.render("no_access", templateVars)
   }
-  const shortURL = req.params.shortURL;
+  const shortURL = req.params.id;
   const longURL = urlDatabaseObject[shortURL].longURL;
   res.redirect(longURL);
 })
 
 
 //changes longURL entry SHOULD ALSO PREVENT OTHER LOGGED INS TO ACCESS THIS
-app.post("/urls/:shortURL", (req, res) => {
+app.post("/urls/:id", (req, res) => {
 
   if (!req.session.user_id) {
     const templateVars = { 
@@ -262,7 +262,7 @@ app.post("/urls/:shortURL", (req, res) => {
     return res.render("no_access", templateVars)
   }
 
-  const shortURL = req.params.shortURL
+  const shortURL = req.params.id
   const newLongURL = req.body.longURL
   const userId = req.session.user_id
 
@@ -278,7 +278,7 @@ app.post("/urls/:shortURL", (req, res) => {
 
 
 //Show short urls page 
-app.get("/urls/:shortURL", (req, res) => {
+app.get("/urls/:id", (req, res) => {
 
   if (!req.session.user_id) {
     const templateVars = { 
@@ -289,7 +289,7 @@ app.get("/urls/:shortURL", (req, res) => {
     return res.render("no_access", templateVars)
   }
 
-  if (!urlDatabaseObject[req.params.shortURL]) {
+  if (!urlDatabaseObject[req.params.id]) {
     const templateVars = { 
       errorMessage: "ERROR - 404 - This short URL doesn't exist in our database. Please try again",
       user: null
@@ -301,7 +301,7 @@ app.get("/urls/:shortURL", (req, res) => {
 
   const userId = req.session.user_id
   const userURLs = urlsForUser(userId)
-  const shortURL = req.params.shortURL
+  const shortURL = req.params.id
 
   // console.log(users[userId]);
 

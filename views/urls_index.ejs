@@ -31,14 +31,15 @@
             <tr>
               <td><%= url %></td>
               <td><%= urls[url].longURL %></td>
-              <td><a href="/urls/<%= url %>"><button type="button" class="btn btn-success">Edit</button></a></td>
-              <td><form method="POST" action="/u/<%= url %>/delete"><button type="submit" class="btn btn-danger">Delete</button></form></td>
-        
+              <td><form method="GET" action="/urls/<%= url %>"><button type="submit" class="btn btn-success">Edit</button></form></td>
+              <td><form method="POST" action="/urls/<%= url %>/delete"><button type="submit" class="btn btn-danger">Delete</button></form></td>
             </tr>
           <% } %>
- 
         </tbody>
       </table>
+      <p>
+        <td><form method="GET" action="/urls/new"><button type="submit" class="btn btn-primary">Create A New Link</button></form></td>
+      </p>
     </main>
      <!-- Bootstrap JS -->
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
