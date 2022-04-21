@@ -5,12 +5,13 @@ const bodyParser = require("body-parser");
 // const cookieParser = require('cookie-parser');
 const cookieSession = require('cookie-session')
 const bcrypt = require('bcryptjs');
+const salt = bcrypt.genSaltSync(10)
 const { getUserByEmail } = require('./helpers.js')
 app.use(bodyParser.urlencoded({ extended: true }));
 // app.use(cookieParser());
 app.use(cookieSession({
   name: 'session',
-  keys: ['key1'],
+  keys: ['This is my first key'],
 }))
 // const res = require('express/lib/response');
 
@@ -58,12 +59,12 @@ const users = {
   "userRandomID": {
     id: "userRandomID",
     email: "user@example.com",
-    password: bcrypt.hashSync("purple-monkey-dinosaur", 10)
+    password: bcrypt.hashSync("purple-monkey-dinosaur", salt)
   },
   "user2RandomID": {
     id: "user2RandomID",
     email: "user2@example.com",
-    password: bcrypt.hashSync("dishwasher-funk", 10)
+    password: bcrypt.hashSync("dishwasher-funk", salt)
   }
 
 }
@@ -102,6 +103,7 @@ app.get("/urls", (req, res) => {
       errorMessage: "ERROR - 403 - User must be logged in to view URLs. Please login or register for an account.",
       user: null
     }
+    res.status('403')
     return res.render("no_access", templateVars)
   }
 
@@ -131,15 +133,18 @@ app.get("/urls", (req, res) => {
 //creates a new entry
 app.post("/urls", (req, res) => {
   if (!req.session.user_id) {
-    return res.status('403').send('ERROR - 403 - User must be logged in to submit URLs')
+    const templateVars = { 
+      errorMessage: "ERROR - 403 - User must be logged in to submit URLs",
+      user: null
+    }
+    res.status('403')
+    return res.render("no_access", templateVars)
   }
 
   // console.log("in /urls post request")
   const shortURL = generateRandomString()
   const longURL = req.body.longURL;
   const userID = req.session.user_id
-
-
 
   urlDatabaseObject[shortURL] = {
     longURL,
@@ -159,7 +164,6 @@ app.post("/urls", (req, res) => {
   // console.log("templateVars: ", templateVars)
 
   // console.log(urlDatabaseObject)
-
   return res.render("urls_show", templateVars)
 
 })
@@ -168,7 +172,12 @@ app.post("/urls", (req, res) => {
 //delete an entry 
 app.post("/u/:shortURL/delete", (req, res) => {  
   if (!req.session.user_id) {
-    return res.status('403').send('ERROR - 403 - User must be logged in to submit URLs')
+    const templateVars = { 
+      errorMessage: "ERROR - 403 - User must be logged in to delete URLs",
+      user: null
+    }
+    res.status('403')
+    return res.render("no_access", templateVars)
   }
 
   delete urlDatabaseObject[req.params.shortURL];
@@ -232,6 +241,7 @@ app.get("/u/:shortURL", (req, res) => {
       errorMessage: "ERROR - 403 - User must be logged in to view URLs. Please login or register for an account.",
       user: users[userID]
     }
+    res.status('403')
     return res.render("no_access", templateVars)
   }
   const shortURL = req.params.shortURL;
@@ -244,7 +254,12 @@ app.get("/u/:shortURL", (req, res) => {
 app.post("/urls/:shortURL", (req, res) => {
 
   if (!req.session.user_id) {
-    return res.status('403').send('ERROR - 403 - User must be logged in to change URLs')
+    const templateVars = { 
+      errorMessage: "ERROR - 403 - User must be logged in to change URLs",
+      user: null
+    }
+    res.status('403')
+    return res.render("no_access", templateVars)
   }
 
   const shortURL = req.params.shortURL
@@ -253,12 +268,12 @@ app.post("/urls/:shortURL", (req, res) => {
 
   urlDatabaseObject[shortURL].longURL = newLongURL
 
-  const updatedDatabase = {
-    shortURL,
-    longURL: newLongURL,
-    user: users[userId],
-  };
-  res.render("urls_show", updatedDatabase)
+  // const updatedDatabase = {
+  //   shortURL,
+  //   longURL: newLongURL,
+  //   user: users[userId],
+  // };
+  return res.redirect("/urls")
 })
 
 
@@ -270,11 +285,17 @@ app.get("/urls/:shortURL", (req, res) => {
       errorMessage: "ERROR - 403 - User must be logged in to view URLs. Please login or register for an account.",
       user: null
     }
+    res.status('403')
     return res.render("no_access", templateVars)
   }
 
   if (!urlDatabaseObject[req.params.shortURL]) {
-    return res.status('404').send('ERROR - 404 - This short URL doesn\'t exist in our database. Please try another')
+    const templateVars = { 
+      errorMessage: "ERROR - 404 - This short URL doesn't exist in our database. Please try again",
+      user: null
+    }
+    res.status('404')
+    return res.render("no_access", templateVars)
   }
 
 
@@ -330,7 +351,12 @@ app.post("/login", (req, res) => {
   let userObject = getUserByEmail(enteredEmail, users);
 
   if (!userObject) {
-    return res.status('403').send('ERROR - 403 - Email not in database.');
+    const templateVars = { 
+      errorMessage: "ERROR - 403 - Email not in database.",
+      user: null
+    }
+    res.status('403')
+    return res.render("no_access", templateVars)
   }
 
   const hashedPassword = users[userObject.id].password
@@ -339,7 +365,12 @@ app.post("/login", (req, res) => {
   }
 
   if (!req.session.user_id) {
-    return res.status('403').send('ERROR - 403 - Incorrect Password. Please try again.')
+    const templateVars = { 
+      errorMessage: "ERROR - 403 - Incorrect Password. Please try again.",
+      user: null
+    }
+    res.status('403')
+    return res.render("no_access", templateVars)
   }
 
   // console.log(req.session.user_id)
@@ -351,6 +382,8 @@ app.post("/login", (req, res) => {
 
 //log out
 app.post("/logout", (req, res) => {
+
+  ///or delete req.session.user_id
   if (req.session.user_id) {
   req.session = null;
   res.redirect("/urls");
@@ -380,25 +413,37 @@ app.get("/register", (req, res) => {
 
 app.post("/register", (req, res) => {
   if (req.body.email === '') {
-    res.status('400').send('ERROR - 400 - Please enter a valid email address')
-    return;
+    const templateVars = { 
+      errorMessage: "ERROR - 400 - Please enter a valid email address.",
+      user: null
+    }
+    res.status('400')
+    return res.render("no_access", templateVars)
   }
 
   if (req.body.password === '') {
-    res.status('400').send('ERROR - 400 - Please create a unique password')
-    return;
+    const templateVars = { 
+      errorMessage: "ERROR - 400 - Please create a unique password.",
+      user: null
+    }
+    res.status('400')
+    return res.render("no_access", templateVars)
   }
 
   const usernameExists = getUserByEmail(req.body.email, users);
 
   if (usernameExists) {
-    res.status('400').send('ERROR - 400 - User email already exists. Contact us for a replacement password (or try some golden oldies).')
-    return;
+    const templateVars = { 
+      errorMessage: "ERROR - 400 - User email already exists. Contact us for a replacement password (or try some golden oldies).",
+      user: null
+    }
+    res.status('400')
+    return res.render("no_access", templateVars)
   }
 
   const newUserId = generateRandomString();
   const password = req.body.password;
-  const hashedPassword = bcrypt.hashSync(password, 10);
+  const hashedPassword = bcrypt.hashSync(password, salt);
 
   const newUserObject = {
     id: newUserId,
