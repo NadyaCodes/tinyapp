@@ -5,6 +5,7 @@ const bodyParser = require("body-parser");
 // const cookieParser = require('cookie-parser');
 const cookieSession = require('cookie-session')
 const bcrypt = require('bcryptjs');
+const { getUserByEmail, urlsForUser, generateRandomString } = require('./helpers.js')
 app.use(bodyParser.urlencoded({ extended: true }));
 // app.use(cookieParser());
 app.use(cookieSession({
@@ -43,34 +44,6 @@ const users = {
     password: bcrypt.hashSync("dishwasher-funk", 10)
   }
 
-}
-
-function generateRandomString() {
-  let randomString = ""
-  const stringOptions = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-  for (let i = 0; i < 6; i++) {
-    randomString += stringOptions[Math.floor(Math.random() * stringOptions.length)]
-  }
-  return randomString;
-}
-
-function findMatchingEmail(usersObject, email) {
-  for (let id in usersObject) {
-    if (usersObject[id].email === email) {
-      return true;
-    }
-  }
-}
-
-function urlsForUser(userId) {
-  let myURLs = {};
-
-  for (let key in urlDatabaseObject) {
-    if(urlDatabaseObject[key].userID === userId) {
-        myURLs[key] = urlDatabaseObject[key]
-    }
-  }
-  return myURLs
 }
 
 
@@ -326,26 +299,19 @@ app.post("/login", (req, res) => {
   const enteredEmail = req.body.email;
   const enteredPassword = req.body.password;
 
-  let user;
-  if (!findMatchingEmail(users, enteredEmail)) {
-    res.status('403').send('ERROR - 403 - Email not in database.')
-    return;
+  let userObject = getUserByEmail(enteredEmail, users);
+
+  if (!userObject) {
+    return res.status('403').send('ERROR - 403 - Email not in database.');
   }
 
-  if (findMatchingEmail(users, req.body.email)) {
-    for (let id in users) {
-      const hashedPassword = users[id].password
-      if ((users[id].email === enteredEmail) && bcrypt.compareSync(enteredPassword, hashedPassword)) {
-        user = users[id].id
-        req.session.user_id = user;
-      }
-    }
+  const hashedPassword = users[userObject.id].password
+  if (bcrypt.compareSync(enteredPassword, hashedPassword)) {
+    req.session.user_id = userObject.id;
   }
 
-
-  if (!user) {
-    res.status('403').send('ERROR - 403 - Incorrect Password. Please try again.')
-    return;
+  if (!req.session.user_id) {
+    return res.status('403').send('ERROR - 403 - Incorrect Password. Please try again.')
   }
 
   // console.log(req.session.user_id)
@@ -395,7 +361,9 @@ app.post("/register", (req, res) => {
     return;
   }
 
-  if (findMatchingEmail(users, req.body.email)) {
+  const usernameExists = getUserByEmail(req.body.email, users);
+
+  if (usernameExists) {
     res.status('400').send('ERROR - 400 - User email already exists. Contact us for a replacement password (or try some golden oldies).')
     return;
   }
